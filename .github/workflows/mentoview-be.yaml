@@ -1,10 +1,10 @@
-name: mentoview backend 12
+name: mentoview backend test
 
 on:
   # workflow_dispatch
   push:
     branches:
-      - dev
+      - test
 
 jobs:
   ci:
