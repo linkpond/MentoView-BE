@@ -35,18 +35,20 @@ public class MvOAuth2FormSuccessHandler extends SimpleUrlAuthenticationSuccessHa
 
         MvPrincipalDetails mvPrincipalDetails;
         if (authentication.getPrincipal() instanceof OidcUser oidcUser) {
+
             log.info("‼️‼️‼️‼️‼️‼️‼ OidcUser 로그인 처리");
             UserDto userDto = UserDto.byOAuth2User(oidcUser);
             mvPrincipalDetails = MvPrincipalDetails.of(userDto, oidcUser);
 
         } else if (authentication.getPrincipal() instanceof OAuth2User oAuth2User) {
+
             log.info("‼️‼️‼️‼️‼️‼️‼ OAuth2User 로그인 처리");
             UserDto userDto = UserDto.byOAuth2User(oAuth2User);
             mvPrincipalDetails = MvPrincipalDetails.of(userDto, oAuth2User.getAttributes());
 
         } else if (authentication.getPrincipal() instanceof UserDetails userDetails) {
-            log.info("‼️‼️‼️‼️‼️‼️‼ UserDetails 로그인 처리");
 
+            log.info("‼️‼️‼️‼️‼️‼️‼ UserDetails 로그인 처리");
             mvPrincipalDetails = (MvPrincipalDetails) userDetails;
 
         }else {
@@ -54,55 +56,34 @@ public class MvOAuth2FormSuccessHandler extends SimpleUrlAuthenticationSuccessHa
         }
         UsernamePasswordAuthenticationToken authToken =
                 new UsernamePasswordAuthenticationToken(mvPrincipalDetails, null, mvPrincipalDetails.getAuthorities());
+
         SecurityContextHolder.getContext().setAuthentication(authToken);
 
         log.info("️‼️‼️‼️‼️‼️‼  SecurityContext에 저장된 Authentication: {}", SecurityContextHolder.getContext().getAuthentication());
 
 
         String userEmail = mvPrincipalDetails.getName();
+
         Collection<? extends GrantedAuthority> authorities = authentication.getAuthorities();
         Iterator<? extends GrantedAuthority> iterator = authorities.iterator();
         GrantedAuthority auth = iterator.next();
+
         String role = auth.getAuthority();
-
-
         String temporaryToken = jwtTokenProvider.createTemporaryToken(userEmail, Role.toCode(role));// 2분
-        String refreshToken = jwtTokenProvider.createRefreshToken(userEmail, Role.toCode(role));// 7일
-        // 우리가 만든 refreshToken 디비로 저장
-        refreshTokenService.addRefreshToken(userEmail, refreshToken, jwtTokenProvider.getRefreshTokenExpiration());
 
-        String tokenUrl = String.format("http://localhost:3000/login?token=%s&", temporaryToken);
+        String realRefreshToken = jwtTokenProvider.createRefreshToken(userEmail, Role.toCode(role));// 7일
+        // 우리가 만든 refreshToken 디비로 저장
+        refreshTokenService.updateOrAddRefreshToken(userEmail, realRefreshToken, jwtTokenProvider.getRefreshTokenExpiration());
+
+        String tokenUrl = String.format("http://localhost:3000/google-login?token=%s", temporaryToken);
         response.sendRedirect(tokenUrl);
 
 
         log.info("jwtCookie{}" , temporaryToken);
         log.info("jwtCookie{} 드림" , temporaryToken);
 
-
-/*        // 헤더로 전달
-        response.setHeader("Authorization", "Bearer " + accessToken);
-        response.setContentType("application/json;charset=UTF-8");
-        response.setStatus(HttpServletResponse.SC_OK);
-
-        String jsonResponse = String.format("{\"message\": \"Login successful\", \"accessToken\": \"%s\"}", accessToken);
-        response.getWriter().write(jsonResponse);*/
     }
-
-
 
 }
 
-/*        Object principal = authentication.getPrincipal();
-        MvPrincipalDetails mvPrincipalDetails;*//*
-
-            if (mvPrincipalDetails instanceof MvPrincipalDetails) {
-mvPrincipalDetails = (MvPrincipalDetails) mvPrincipalDetails;
-                log.info("✅ OAuth2 로그인 성공: {}", mvPrincipalDetails.getUsername());
-        // 성공 로직 처리
-        } else {
-        log.error("❌ OAuth2 로그인 실패: Principal 타입이 예상과 다름. {}", mvPrincipalDetails.getClass());
-        throw new ClassCastException("Expected MvPrincipalDetails but got " + mvPrincipalDetails.getClass());
-        }
-
-*/
 

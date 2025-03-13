@@ -29,7 +29,7 @@ public class MvOAuth2UserService extends DefaultOAuth2UserService {
 
         log.info("✅ ‼️‼️OAuth2UserRequest 정보: {}", userRequest);
         log.info("✅ ‼️‼️OAuth2UserRequest 정보.getRedirectUri: {}", userRequest.getClientRegistration().getRedirectUri());
-        log.info("✅ ‼️‼️ Access Token: {}", userRequest.getAccessToken().getTokenValue());
+        log.info("✅ ‼️‼️OAuth2 Access Token: {}", userRequest.getAccessToken().getTokenValue());
 
         OAuth2User oAuth2User = super.loadUser(userRequest);
         log.info("user: {}", oAuth2User);
@@ -67,10 +67,10 @@ public class MvOAuth2UserService extends DefaultOAuth2UserService {
         if (oAuth2User instanceof OidcUser oidcUser) {
             log.info(" ✈️✈️✈️ OidcUser ");
             mvPrincipalDetails = MvPrincipalDetails.of(UserDto.toDto(repositoryUser), oidcUser);
-        } else
+        } else {
             log.info(" ⛴️⛴️⛴️ OAuth2User ");
             mvPrincipalDetails = MvPrincipalDetails.of(UserDto.toDto(repositoryUser), oAuth2User.getAttributes());
-
+        }
         return mvPrincipalDetails;
     }
 

@@ -22,7 +22,9 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.security.web.context.SecurityContextHolderFilter;
+import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.security.web.header.writers.StaticHeadersWriter;
 import org.springframework.web.cors.CorsConfigurationSource;
 
@@ -38,6 +40,13 @@ public class SecurityConfig {
     private final JwtTokenProvider jwtTokenProvider;
     private final MvRequestFilter mvRequestFilter;
     private final AuthenticationConfiguration authenticationConfiguration;
+
+
+    @Bean
+    public SecurityContextRepository securityContextRepository() {
+        return new HttpSessionSecurityContextRepository();
+    }
+
 
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
@@ -80,20 +89,15 @@ public class SecurityConfig {
 
     }
 
-
-    /*     .authorizeHttpRequests(request -> request
-                     .requestMatchers(CorsUtils::isPreFlightRequest).permitAll()
-                     .anyRequest().hasAnyRole(PERMITTED_ROLES)
-             )*/
     @Bean
     public SecurityFilterChain oauth2SecurityFilterChain(HttpSecurity security,
                                                          AuthenticationManager authenticationManager) throws Exception {
         configureCommon(security);
-        security.securityMatcher("/oauth2/authorization/google", "/login/oauth2/code/**")// 이 URL만 처리함
-                .anonymous(anonymous ->
-                        anonymous.principal("anonymousUser").authorities("ROLE_ANONYMOUS"))
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/google", "/api/authorization/google/**", "/oauth2/authorization/google").permitAll()
+        security.securityMatcher("/api/oauth2/authorization/google","/login/oauth2/code/google","/api/authorization/google/**","/api/login/oauth2/code/**");// 이 URL만 처리함
+        security .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/api/auth/google", "/api/authorization/google/**", "/api/oauth2/authorization/google").permitAll()
+                        .requestMatchers("/api/login/oauth2/code/google").permitAll()
+                        .requestMatchers("/api/login/oauth2/code/**").permitAll()
                         .requestMatchers("/login/oauth2/code/google").permitAll()
                         .requestMatchers("/login/oauth2/code/**").permitAll()
                         .anyRequest().authenticated()
@@ -101,10 +105,10 @@ public class SecurityConfig {
                 )
                 .oauth2Login(oauth2 -> oauth2
                         .authorizationEndpoint(authEndpoint -> authEndpoint
-                                .authorizationRequestRepository(authorizationRequestRepository()))
-                        // .baseUri("/oauth2/authorization/google"))
+                                .authorizationRequestRepository(authorizationRequestRepository())
+                                .baseUri("/api/oauth2/authorization"))
                         .redirectionEndpoint(redirectionEndpointConfig -> redirectionEndpointConfig
-                                .baseUri("/login/oauth2/code/google"))
+                                .baseUri("/api/login/oauth2/code/google"))
                         .userInfoEndpoint(userInfoEndpointConfig -> userInfoEndpointConfig.userService(mvOAuth2UserService))
                         .successHandler(mvOAuth2FormSuccessHandler())
                         .failureHandler(mvOAuth2FormFailureHandler())
@@ -118,9 +122,6 @@ public class SecurityConfig {
                                                             MvLoginFormFilter mvLoginFormFilter, AuthenticationConfiguration authenticationConfiguration) throws Exception {
         configureCommon(security);
         security.securityMatcher("/api/login") // 폼 로그인 요청만 매칭
-                .anonymous(anonymous -> anonymous.
-                        principal("anonymousUser")
-                        .authorities("ROLE_ANONYMOUS"))
                 .authorizeHttpRequests(auth -> auth.anyRequest().permitAll())
                 .addFilterBefore(mvLoginFormFilter, UsernamePasswordAuthenticationFilter.class);
         security.addFilterAfter(mvRequestFilter, SecurityContextHolderFilter.class);
@@ -135,8 +136,9 @@ public class SecurityConfig {
         security.authorizeHttpRequests(authorizeRequests ->
                 authorizeRequests
                         .requestMatchers("/api/signup/**").permitAll()
-                        .requestMatchers("/api/auth/me").authenticated()
-                        .requestMatchers("/admin/**").hasRole("ADMIN").anyRequest().authenticated());
+                        .requestMatchers("/api/auth/me").hasRole("USER")
+                        .requestMatchers("/admin/**").hasRole("ADMIN"));
+
         security.addFilterBefore(mvRequestFilter, UsernamePasswordAuthenticationFilter.class);
         return security.build();
     }
