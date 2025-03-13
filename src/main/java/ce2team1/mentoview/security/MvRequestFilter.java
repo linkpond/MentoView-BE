@@ -28,7 +28,7 @@ public class MvRequestFilter extends OncePerRequestFilter {
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
         String path = request.getRequestURI();
-        return path.startsWith("/oauth2/authorization") || path.startsWith("/login/oauth2/code");
+        return path.startsWith("/api/oauth2/authorization") || path.startsWith("/api/login/oauth2/code");
     }
 
     @Override

@@ -29,8 +29,7 @@ public class JwtTokenProvider {
 
     //JwtTokenProvider 생성자
     public JwtTokenProvider(
-            @Value
-                    ("${spring.jwt.secret}") String secret,
+            @Value("${spring.jwt.secret}") String secret,
             @Value("${access-token-expiration}") long accessTokenExpiration,
             @Value("${refresh-token-expiration}") long refreshTokenExpiration,
             @Value("${temporary-token-expiration}") long temporaryTokenExpiration
@@ -42,6 +41,7 @@ public class JwtTokenProvider {
         this.refreshTokenExpiration = refreshTokenExpiration;
         this.temporaryTokenExpiration = temporaryTokenExpiration;
     }
+
     //TemporaryToken
     public String createTemporaryToken(String email, Role role) {
         return createToken(TEMPORARY, email, role, temporaryTokenExpiration);
@@ -81,7 +81,7 @@ public class JwtTokenProvider {
         }
         String role = Jwts.parser().verifyWith(secretKey).build().parseSignedClaims(token).getPayload()
                 .get("role").toString();
-        return Role.valueOf(role);
+        return Role.toCode(role);
     }
 
 
@@ -114,12 +114,4 @@ public class JwtTokenProvider {
                 .signWith(secretKey)
                 .compact();
     }
-
-    /*public long getAccessTokenExpiration() {
-        return accessTokenExpiration;
-    }
-    public long getRefreshTokenExpiration() {
-        return refreshTokenExpiration;
-    }*/
-
 }
