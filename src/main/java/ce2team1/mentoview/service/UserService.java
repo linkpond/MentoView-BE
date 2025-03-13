@@ -103,4 +103,11 @@ public class UserService {
         User user = userRepository.findById(uId).orElseThrow();
         return user.getBillingKey();
     }
+
+    public UserDto findByEmail(String email) {
+
+        User user = userRepository.findByEmail(email).orElseThrow(
+                () -> new ServiceException("User not found"));
+        return UserDto.toDto(user);
+    }
 }
