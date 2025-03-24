@@ -47,7 +47,7 @@ public class MvRequestFilter extends OncePerRequestFilter {
         String authToken = bearerToken.substring(7).trim();
 
         if (jwtTokenProvider.isExpired(authToken)) {
-            String emailFromToken = jwtTokenProvider.getEmailFromToken(authToken);
+            //String emailFromToken = jwtTokenProvider.getEmailFromToken(authToken);
 
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             response.setContentType("application/json");
