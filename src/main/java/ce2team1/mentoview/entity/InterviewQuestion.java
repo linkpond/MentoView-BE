@@ -20,9 +20,11 @@ public class InterviewQuestion extends AuditingFields {
     @Column(name = "question_id")
     private Long questionId;
 
+    @Column(nullable = false)
     private String question;
 
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private Difficulty difficulty;
 
     @ManyToOne(fetch = FetchType.LAZY)

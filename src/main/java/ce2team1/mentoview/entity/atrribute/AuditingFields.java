@@ -18,18 +18,15 @@ import java.time.LocalDateTime;
 public class AuditingFields {
     @Column(name = "created_at", updatable = false, length = 20)
     @CreatedDate
-    protected LocalDateTime createdAt ;
-
-
+    private LocalDateTime createdAt ;
     @CreatedBy
-    @Column(name = "created_by",updatable = false, length = 20)
-    protected String createdBy;
+    @Column(name = "created_by",updatable = false, length = 50)
+    private String createdBy;
 
     @LastModifiedDate
-    @Column(name = "modified_at")
-    protected LocalDateTime modifiedAt;
-
+    @Column(name = "modified_at", updatable = true, length = 50)
+    private LocalDateTime modifiedAt;
     @LastModifiedBy
-    @Column(name = "modified_by", updatable = true, length = 20)
-    protected String modifiedBy;
+    @Column(name = "modified_by", updatable = true, length = 50)
+    private String modifiedBy;
 }

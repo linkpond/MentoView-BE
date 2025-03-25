@@ -7,10 +7,10 @@ import ce2team1.mentoview.exception.ServiceException;
 import ce2team1.mentoview.repository.SubscriptionRepository;
 import ce2team1.mentoview.repository.UserRepository;
 import ce2team1.mentoview.service.dto.UserDto;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 
@@ -22,7 +22,7 @@ public class UserService {
     private final SubscriptionRepository subscriptionRepository;
     private final PasswordEncoder passwordEncoder;
 
-
+    @Transactional(readOnly = false)
     public UserDto createUser(UserDto userDto) {
 
         Optional<User> findByEmail = userRepository.findByEmail(userDto.getEmail());
@@ -47,7 +47,6 @@ public class UserService {
 
         User findUser = userRepository.findById(userId).orElseThrow(() -> new ServiceException("User not found"));
 
-
         if(findUser.getPassword() == null || findUser.getPassword().isEmpty()) {
             throw new ServiceException("Password is empty");
         }
@@ -59,38 +58,21 @@ public class UserService {
 
     }
 
-
+    @Transactional(readOnly = false)
     public void changePassword(Long userId, String beforePassword, String afterPassword) {
 
         User user = userRepository.findById(userId).orElseThrow(() -> new ServiceException("User not found"));
-        UserDto userDto = UserDto.toDto(user);
+        //UserDto userDto = UserDto.toDto(user);
 
-        if (!passwordEncoder.matches(beforePassword, userDto.getPassword())) {
+        if (!passwordEncoder.matches(beforePassword, user.getPassword())) {
             throw new ServiceException("Password does not match");
         }
+
         UserDto changed = UserDto.toDto(user).toBuilder()
                 .password(passwordEncoder.encode(afterPassword))
                 .build();
         userRepository.save(User.toEntity(changed));
-
     }
-
-/*    // OAuth
-    public User updateUser(User user, OAuth2ResponseSocial responseSocial) {
-        user.updateSocialInfo(responseSocial.getProviderId());
-        return userRepository.save(user);
-    }
-    // OAuth
-    public User createUser(OAuth2ResponseSocial responseSocial) {
-        return User.builder()
-                .email(responseSocial.getEmail())
-                .name(responseSocial.getName())
-                .role(Role.USER)
-                .socialProvider(responseSocial.getProvider())
-                .providerId(responseSocial.getProviderId())
-                .status(UserStatus.ACTIVE)
-                .build();
-    }*/
 
     @Transactional
     public void setBillingKey(Long uId, String billingKey) {
@@ -104,10 +86,43 @@ public class UserService {
         return user.getBillingKey();
     }
 
+    @Transactional(readOnly = true)
     public UserDto findByEmail(String email) {
 
         User user = userRepository.findByEmail(email).orElseThrow(
                 () -> new ServiceException("User not found"));
+
+        System.out.println("유저 id - " + user.getUserId());
         return UserDto.toDto(user);
+    }
+
+    @Transactional(readOnly = false)
+    public UserDto createPassword(Long userId, String password) {
+        User user = userRepository.findById(userId).orElseThrow(() -> new ServiceException("User not found"));
+        //UserDto userDto = UserDto.toDto(user);
+
+        UserDto newUserDto = UserDto.toDto(user).toBuilder()
+                .password(passwordEncoder.encode(password))
+                .build();
+        User saved = userRepository.save(User.toEntity(newUserDto));
+
+        return UserDto.toDto(saved);
+
+    }
+
+    public UserDto findByUserId(Long userId) {
+        User user = userRepository.findById(userId).orElseThrow(() -> new ServiceException("User not found"));
+        return UserDto.toDto(user);
+    }
+
+    @Transactional(readOnly = false)
+    public void softDelete(Long userId) {
+        UserDto userDto = UserDto.toDto(userRepository.findById(userId).orElseThrow(() -> new ServiceException("User not found")));
+        UserDto updatedDto = userDto.toBuilder()
+                .billingKey(null)
+                .status(UserStatus.DELETED)
+                .build();
+
+        userRepository.save(User.toEntity(updatedDto));
     }
 }

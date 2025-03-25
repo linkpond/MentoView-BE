@@ -5,6 +5,7 @@ import ce2team1.mentoview.entity.atrribute.Role;
 import ce2team1.mentoview.entity.atrribute.UserStatus;
 import ce2team1.mentoview.repository.UserRepository;
 import ce2team1.mentoview.security.dto.GoogleOAuth2Response;
+import ce2team1.mentoview.security.dto.LoginType;
 import ce2team1.mentoview.security.dto.MvPrincipalDetails;
 import ce2team1.mentoview.security.dto.OAuth2ResponseSocial;
 import ce2team1.mentoview.service.dto.UserDto;
@@ -50,7 +51,7 @@ public class MvOAuth2UserService extends DefaultOAuth2UserService {
                 .orElseGet(() -> userRepository.save(User.toEntity(
                         UserDto.of(
                                 responseSocial.getEmail(),
-                                null,
+                                "",
                                 responseSocial.getName(),
                                 Role.USER,
                                 responseSocial.getProvider(),
@@ -60,16 +61,17 @@ public class MvOAuth2UserService extends DefaultOAuth2UserService {
                         )
                 )));
 
-        log.info(" ✅  저장된 사용자: {}", repositoryUser);
+        UserDto userDto = UserDto.toDto(repositoryUser);
+        log.info(" ✅  저장된 사용자: {}", userDto);
 
         // ✅ OAuth2User -> MvPrincipalDetails 변환
         MvPrincipalDetails mvPrincipalDetails;
         if (oAuth2User instanceof OidcUser oidcUser) {
             log.info(" ✈️✈️✈️ OidcUser ");
-            mvPrincipalDetails = MvPrincipalDetails.of(UserDto.toDto(repositoryUser), oidcUser);
+            mvPrincipalDetails = MvPrincipalDetails.of(UserDto.toDto(repositoryUser), oidcUser, LoginType.OIDC);
         } else {
             log.info(" ⛴️⛴️⛴️ OAuth2User ");
-            mvPrincipalDetails = MvPrincipalDetails.of(UserDto.toDto(repositoryUser), oAuth2User.getAttributes());
+            mvPrincipalDetails = MvPrincipalDetails.of(UserDto.toDto(repositoryUser), oAuth2User.getAttributes(),LoginType.OAUTH2);
         }
         return mvPrincipalDetails;
     }

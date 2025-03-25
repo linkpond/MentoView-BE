@@ -1,4 +1,4 @@
-package ce2team1.mentoview.security;
+package ce2team1.mentoview.security.service;
 
 import ce2team1.mentoview.entity.atrribute.Role;
 import io.jsonwebtoken.Jwts;
@@ -114,4 +114,17 @@ public class JwtTokenProvider {
                 .signWith(secretKey)
                 .compact();
     }
+
+    // 토큰 생성!
+/*    private  String createTemp(String type , String email, Role role, Long expiration, UserStatus status) {
+        return Jwts.builder()
+                .claim("type", type)
+                .claim("email", email)
+                .claim("role", role.getCode())
+                .claim("status", status.name())
+                .issuedAt(new Date(System.currentTimeMillis())) //시간
+                .expiration(new Date(System.currentTimeMillis() + expiration))
+                .signWith(secretKey)
+                .compact();
+    }*/
 }

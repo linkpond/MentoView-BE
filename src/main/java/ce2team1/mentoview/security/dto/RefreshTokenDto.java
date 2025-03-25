@@ -13,10 +13,11 @@ import java.time.LocalDateTime;
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class RefreshTokenDto {
-    Long id;
-    String userEmail;
-    String refreshToken;
-    LocalDateTime expirationDate;
+    private Long id;
+    private String userEmail;
+    private String refreshToken;
+    private LocalDateTime expirationDate;
+    private LocalDateTime maxExpirationDate;
 
 
     public static RefreshTokenDto of(String userEmail, String refreshToken, LocalDateTime expirationDate) {
@@ -24,7 +25,8 @@ public class RefreshTokenDto {
                 null,
                 userEmail,
                 refreshToken,
-                expirationDate
+                expirationDate,
+                expirationDate.plusDays(RefreshToken.MAX_EXPIRATION_DAYS)
         );
     }
 
@@ -34,6 +36,7 @@ public class RefreshTokenDto {
                 .userEmail(refreshToken.getUserEmail())
                 .refreshToken(refreshToken.getRefreshToken())
                 .expirationDate(refreshToken.getExpirationDate())
+                .maxExpirationDate(refreshToken.getMaxExpirationDate())
                 .build();
     }
 }

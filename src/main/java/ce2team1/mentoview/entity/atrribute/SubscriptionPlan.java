@@ -4,7 +4,8 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 
 @JsonFormat(shape = JsonFormat.Shape.STRING)
 public enum SubscriptionPlan {
-    FREE_TIRE,
+    FREE_TIER,
+    BASIC,
     PREMIUM;
 
 }

@@ -1,4 +1,4 @@
-package ce2team1.mentoview.security;
+package ce2team1.mentoview.security.social;
 
 import ce2team1.mentoview.utils.security.MvCookieUtils;
 import io.micrometer.common.util.StringUtils;

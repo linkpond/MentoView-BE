@@ -30,7 +30,6 @@ public class PaymentService {
 
         // 사용자에게 활성화된 구독(status == 'ACTIVE')이 존재하는지 확인
         Long subId = subscriptionService.checkSubscription(Long.valueOf(paymentCheckDto.getCustomer().getId()));
-        System.out.println(subId);
 
         SubscriptionDto subscription;
         if (subId != null){
@@ -38,7 +37,6 @@ public class PaymentService {
         } else {
             subscription = subscriptionService.createSubscription(paymentCheckDto);
         }
-        System.out.println(subscription.getStartDate());
 
         Payment payment = PaymentDto.checkToDto(paymentCheckDto, subscription.getSubId()).toEntity(subscriptionService.getSubscriptionByUserId(subscription.getUserId(), SubscriptionStatus.ACTIVE));
         paymentRepository.save(payment);

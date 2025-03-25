@@ -21,13 +21,17 @@ public class InterviewResponse extends AuditingFields {
     private Long responseId;
 
     @Column(name = "s3_key")
-    private String s3Key;// 음성파일 저장 url
+    private String s3Key;// 음성파일 저장 s3 key
 
     @Lob
     @Column(columnDefinition = "TEXT")
     private String response; // AWS Transcribe 가 변환
+
+    @Column(nullable = false)
     private Boolean answered; // 상태 필드 3가 필요시 Enum
-    private Duration duration;//?
+
+    @Column(nullable = false)
+    private Duration duration; // 응답 제출 안했을 시 0초 지정
 
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "question_id", nullable = false, unique = true)

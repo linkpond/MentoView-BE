@@ -1,4 +1,4 @@
-package ce2team1.mentoview.security;
+package ce2team1.mentoview.security.filter;
 
 import ce2team1.mentoview.security.dto.UserFormLogin;
 import com.fasterxml.jackson.databind.ObjectMapper;

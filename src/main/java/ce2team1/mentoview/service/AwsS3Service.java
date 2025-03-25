@@ -5,7 +5,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import software.amazon.awssdk.awscore.exception.AwsServiceException;
 import software.amazon.awssdk.core.ResponseInputStream;
+import software.amazon.awssdk.core.exception.SdkClientException;
+import software.amazon.awssdk.core.exception.SdkException;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.S3Utilities;
@@ -15,6 +18,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
 @Slf4j
@@ -105,5 +109,22 @@ public class AwsS3Service {
                 .key(key)
                 .build();
         s3Client.deleteObject(deleteObjectRequest);
+    }
+
+    public String interviewArchiveUpload(Long userId,String interviewDataJson) {
+        try {
+            String s3key = "archive/interview-" + userId + "-" + UUID.randomUUID().toString().substring(0, 8) + ".json";
+            PutObjectRequest objectRequest = PutObjectRequest.builder()
+                    .bucket(bucketName)
+                    .key(s3key)
+                    .contentType("application/json")
+                    .build();
+
+            s3Client.putObject(objectRequest, RequestBody.fromString(interviewDataJson, StandardCharsets.UTF_8));
+            return s3key;
+        } catch (SdkException e) {
+            log.error("S3 archive 업로드 오류"+e.getMessage());
+            throw new RuntimeException("S3 archive 업로드 오류", e);
+        }
     }
 }
