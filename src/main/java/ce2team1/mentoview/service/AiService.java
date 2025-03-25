@@ -50,7 +50,8 @@ public class AiService {
                         "너가 제공한 면접 질문은 아래와 같아. \n" +
                         request.getQuestion() +
                         "\n해당 면접 질문과 응답을 보고 피드백을 생성해줘. " +
-                        "마크다운은 사용하지 말고 오직 피드백만 제공해.");
+                        "마크다운은 사용하지 말고 오직 피드백만 제공해. " +
+                        "\n만약 답변이 너무 짧거나 없으면 피드백으로 모범답안을 제공해.");
 
         UserMessage userMessage = new UserMessage(request.getAnswer());
         ChatResponse response = openAiChatModel.call(new Prompt(systemMessage, userMessage));
