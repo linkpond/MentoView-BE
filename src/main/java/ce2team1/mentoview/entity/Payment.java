@@ -21,18 +21,21 @@ public class Payment {
     @Column(name = "payment_id")
     private Long paymentId;
 
+    @Column(nullable = false)
     private BigDecimal amount;
 
+    @Column(nullable = false)
     private String approvalCode;
 
+    @Column(nullable = false)
     @Enumerated(EnumType.STRING)
     private PaymentStatus status;
 
-    @Column(name = "payment_date")
+    @Column(name = "payment_date", nullable = false)
     private LocalDateTime paymentDate;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "subscription_id")
+    @JoinColumn(name = "subscription_id", nullable = false)
     private Subscription subscription;
 
     public static Payment of(BigDecimal amount, String approvalCode,PaymentStatus status, LocalDateTime paymentDate, Subscription subscription) {

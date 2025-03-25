@@ -11,12 +11,14 @@ import ce2team1.mentoview.repository.UserRepository;
 import ce2team1.mentoview.service.dto.InterviewDto;
 import ce2team1.mentoview.service.dto.ResumeDto;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ResumeService {
@@ -106,5 +108,24 @@ public class ResumeService {
         awsS3Service.deleteS3Object(resume.getS3Key());
         resume.softDelete();
         resumeRepository.save(resume);
+    }
+
+    public void hardDeleteResume(Long userId) {
+
+        userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        List<Resume> resumes = resumeRepository.findAllByUserId(userId);
+        if (resumes.isEmpty()) {
+            log.info("[S3 삭제] 유저 ID {}: 삭제할 이력서가 없습니다.", userId);
+            return;
+        }
+        for (Resume resume : resumes) {
+            if (resume.getS3Key()!=null) {
+                log.info("[S3 삭제] Resume ID: {}, S3 Key: {}", resume.getResumeId(), resume.getS3Key());
+                awsS3Service.deleteS3Object(resume.getS3Key());
+            }
+        }
+        log.info("[S3 삭제 완료] 유저 ID {}: 모든 이력서 삭제 완료", userId);
     }
 }

@@ -21,7 +21,7 @@ public class InterviewFeedback extends AuditingFields {
     private Long feedbackId;
 
     @Lob
-    @Column(columnDefinition = "TEXT")
+    @Column(columnDefinition = "TEXT", nullable = false)
     private String feedback;
 
     private Integer score;

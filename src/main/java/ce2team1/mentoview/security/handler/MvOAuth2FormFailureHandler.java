@@ -1,4 +1,4 @@
-package ce2team1.mentoview.security;
+package ce2team1.mentoview.security.handler;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;

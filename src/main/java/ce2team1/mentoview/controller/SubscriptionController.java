@@ -39,7 +39,7 @@ public class SubscriptionController {
     public ResponseEntity<List<SubscriptionResp>> getSubscription(@AuthenticationPrincipal MvPrincipalDetails mvPrincipalDetails) {
 
         Long userId = mvPrincipalDetails.getUserId();
-//        Long userId = 1L;
+       // Long userId = 1L;
 
         List<SubscriptionResp> subscriptions = subscriptionService.getSubscriptions(userId);
         for (SubscriptionResp subscriptionResp : subscriptions) {
@@ -58,7 +58,7 @@ public class SubscriptionController {
     public ResponseEntity<String> getSubscriptionStatus(@AuthenticationPrincipal MvPrincipalDetails mvPrincipalDetails) {
 
         Long userId = mvPrincipalDetails.getUserId();
-//        Long userId = 1L;
+       // Long userId = 1L;
 
         if (subscriptionService.getSubscriptionByUserId(userId, SubscriptionStatus.ACTIVE) != null) {
             return ResponseEntity.ok("구독 처리 완료");
@@ -78,7 +78,7 @@ public class SubscriptionController {
     public ResponseEntity<String> deleteSubscription(@PathVariable("subscription_id") Long sId, @AuthenticationPrincipal MvPrincipalDetails mvPrincipalDetails) throws JsonProcessingException {
 
         Long uId = mvPrincipalDetails.getUserId();
-//        Long uId = 1L;
+       // Long uId = 1L;
         Long checkSId = subscriptionService.checkSubscription(uId);
 
         if (checkSId != null && checkSId.equals(sId)) {
@@ -106,14 +106,35 @@ public class SubscriptionController {
     public ResponseEntity<String> createSubscription(@AuthenticationPrincipal MvPrincipalDetails mvPrincipalDetails) throws JsonProcessingException {
 
         Long uId = mvPrincipalDetails.getUserId();
-//        Long uId = 1L;
+       // Long uId = 1L;
 
-        if (subscriptionService.getSubscriptionByUserId(uId, SubscriptionStatus.CANCELED) == null) {
-            portonePaymentService.createPayment(uId);
-        } else {
+        if (subscriptionService.getSubscriptionByUserId(uId, SubscriptionStatus.CANCELED) != null) {
             // 현재 CANCELED 상태의 구독의 nextBillingDate로 결제를 예약하고, 구독의 상태 ACTIVE로 변경
             portonePaymentService.processSubscriptionReactivation(uId);
+          
+        } else {
+            // 바로 결제 진행
+            portonePaymentService.createPayment(uId);
+
         }
+        return ResponseEntity.ok("구독 요청이 정상적으로 처리되었습니다.");
+
+    }
+
+    @Operation(summary = "프리티어 구독 생성", description = "결제 없이 FREE-TIER 구독을 생성합니다.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "프리티어 구독 요청 처리가 성공적으로 이루어졌습니다."),
+            @ApiResponse(responseCode = "500", description = "프리티어 구독 요청 처리 중 문제가 발생했습니다.")
+    })
+    @PostMapping("/subscription/freetier")
+    public ResponseEntity<String> createSubscriptionFreetier(@AuthenticationPrincipal MvPrincipalDetails mvPrincipalDetails) throws JsonProcessingException {
+
+        Long uId = mvPrincipalDetails.getUserId();
+        // Long uId = 1L;
+
+        // 첫 구독 -> free-tire로 구독 생성
+        portonePaymentService.processFreeTierSubscription(uId);
+
         return ResponseEntity.ok("구독 요청이 정상적으로 처리되었습니다.");
 
     }

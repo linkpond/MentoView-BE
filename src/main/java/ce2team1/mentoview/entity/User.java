@@ -28,7 +28,7 @@ public class User extends AuditingFields {
     @Column(unique = true, nullable = false)
     private String email; // OAuth + 폼
 
-    @Column(nullable = true)
+    @Column(nullable = false)
     private String password;//폼전용
 
     private String name;
@@ -47,12 +47,12 @@ public class User extends AuditingFields {
 
     private String billingKey;
 
-    public static User of(String email, String password, String name, Role role, SocialProvider socialProvider, String providerId, boolean isForm, UserStatus status, String billingKey ) {
 
+    public static User of(String email, String password, String name, Role role, SocialProvider socialProvider, String providerId, boolean isForm, UserStatus status, String billingKey ) {
         return new User(
                 null,
                 email,
-                password,  // ✅ 소셜 로그인 사용자는 비밀번호 입력 필수
+                password != null ? password : "",  // ✅ 소셜 로그인 사용자는 비밀번호 입력 필수
                 name,
                 role != null ? role : Role.USER,  // 기본값: USER
                 socialProvider,
@@ -65,21 +65,17 @@ public class User extends AuditingFields {
         return User.builder()
                 .userId(userDto.getUserId())
                 .email(userDto.getEmail())
-                .password(userDto.getPassword())
+                .password(userDto.getPassword()  != null ? userDto.getPassword() : "")
                 .name(userDto.getName())
                 .role(userDto.getRole())
                 .socialProvider(userDto.getSocialProvider())
                 .providerId(userDto.getProviderId())
                 .status(userDto.getStatus())
+                .billingKey(userDto.getBillingKey())
                 .build();
 
     }
-/*
-    // OAuth2용
-    public void updateSocialInfo(String newProviderId) {
-        this.providerId = newProviderId;
-    }
-*/
+
 
     public User updateBillingKey(String billingKey) {
         return this.toBuilder()

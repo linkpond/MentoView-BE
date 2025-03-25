@@ -26,17 +26,23 @@ public class MvPrincipalDetails implements OAuth2User, UserDetails{
     private final UserDto userDto;
     private final Map<String, Object> attributes;
     private final OidcUser oidcUser; // OidcUser
+    private final LoginType loginType;
 
-    public static MvPrincipalDetails of(UserDto userDto) { //폼
-        return new MvPrincipalDetails(userDto, Collections.emptyMap(), null);
+    public static MvPrincipalDetails of(UserDto userDto) {
+        return new MvPrincipalDetails(userDto, Collections.emptyMap(), null,null);
     }
-    public static MvPrincipalDetails of(UserDto userDto, Map<String, Object> attributes) {//OAuth2User전용
-        return new MvPrincipalDetails(userDto, attributes, null);
+
+    public static MvPrincipalDetails of(UserDto userDto, LoginType loginType) { //폼
+        return new MvPrincipalDetails(userDto, Collections.emptyMap(), null,loginType);
+    }
+    public static MvPrincipalDetails of(UserDto userDto, Map<String, Object> attributes, LoginType loginType) {//OAuth2User전용
+        return new MvPrincipalDetails(userDto, attributes, null, loginType);
 
     }
-    public static MvPrincipalDetails of(UserDto userDto, OidcUser oidcUser) { // OIDC 구현체 전용
-        return new MvPrincipalDetails(userDto, oidcUser.getAttributes(), oidcUser);
+    public static MvPrincipalDetails of(UserDto userDto, OidcUser oidcUser, LoginType loginType) { // OIDC 구현체 전용
+        return new MvPrincipalDetails(userDto, oidcUser.getAttributes(), oidcUser,loginType);
     }
+
 
     public UserDto getUserDto() {
         return userDto;
@@ -54,7 +60,10 @@ public class MvPrincipalDetails implements OAuth2User, UserDetails{
 
     @Override
     public String getPassword() {
-        return userDto.getPassword();
+        if (userDto == null) {
+            return "";
+        }
+        return userDto.getPassword() != null ? userDto.getPassword() : "";
     }
 
     public Long getUserId() { // Long id
@@ -65,7 +74,8 @@ public class MvPrincipalDetails implements OAuth2User, UserDetails{
         return UserDto.builder()
                 .userId(mvPrincipalDetails.getUserId())
                 .email(mvPrincipalDetails.getName())
-                .name(mvPrincipalDetails.getUsername())
+                .password(mvPrincipalDetails.getPassword() != null ? mvPrincipalDetails.getPassword() : "")
+                .name(mvPrincipalDetails.getRealName())
                 .build();
     }
 
@@ -76,7 +86,7 @@ public class MvPrincipalDetails implements OAuth2User, UserDetails{
 
     @Override
     public boolean isEnabled() {
-        return userDto.getStatus() == UserStatus.ACTIVE;
+        return userDto.getStatus() != UserStatus.DELETED;
     }
 
     @Override

@@ -2,7 +2,7 @@ package ce2team1.mentoview.security.controller;
 
 import ce2team1.mentoview.controller.dto.response.UserResp;
 import ce2team1.mentoview.entity.atrribute.Role;
-import ce2team1.mentoview.security.JwtTokenProvider;
+import ce2team1.mentoview.security.service.JwtTokenProvider;
 import ce2team1.mentoview.security.dto.MvPrincipalDetails;
 import ce2team1.mentoview.service.UserService;
 import ce2team1.mentoview.service.dto.UserDto;
@@ -28,14 +28,14 @@ import java.util.Optional;
 @Slf4j
 @RestController
 @RequestMapping("/api/auth")
-@Tag(name = "User API", description = "OAthu2")
+@Tag(name = "Auth User API", description = "Auth")
 @RequiredArgsConstructor
 public class OAuth2Controller {
     private final UserService userService;
     private final JwtTokenProvider jwtTokenProvider;
 
 
-    @Operation(summary = "OAuth2", description = "OAuth2 Token && user data")
+    @Operation(summary = "Auth", description = "Auth Token && user data")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "OAuth2 user"),
             @ApiResponse(responseCode = "400", description = "NOT_FOUND")
@@ -46,6 +46,8 @@ public class OAuth2Controller {
                                              HttpServletRequest request) {
 
         log.info("mvPrincipalDetails: {}", mvPrincipalDetails);
+        UserDto dto = mvPrincipalDetails.getUserDto();
+        System.out.println("dto: " + dto);
 
         String existingToken = Optional.ofNullable(request.getHeader(HttpHeaders.AUTHORIZATION))
                 .orElseThrow(() -> new AuthenticationServiceException("미인증 유저"));

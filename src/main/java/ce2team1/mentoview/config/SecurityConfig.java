@@ -1,9 +1,15 @@
 package ce2team1.mentoview.config;
 
-import ce2team1.mentoview.security.*;
+import ce2team1.mentoview.security.filter.*;
+import ce2team1.mentoview.security.handler.MvLogoutHandler;
+import ce2team1.mentoview.security.handler.MvOAuth2FormFailureHandler;
+import ce2team1.mentoview.security.handler.MvOAuth2FormSuccessHandler;
+import ce2team1.mentoview.security.service.JwtTokenProvider;
 import ce2team1.mentoview.security.service.MvAuthenticationProvider;
 import ce2team1.mentoview.security.service.MvOAuth2UserService;
 import ce2team1.mentoview.security.service.RefreshTokenService;
+import ce2team1.mentoview.security.social.MvHttpCookieOAuth2AuthorizationRequestRepository;
+import ce2team1.mentoview.security.social.MvOAuth2ClientRegistration;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
@@ -22,9 +28,7 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
-import org.springframework.security.web.context.SecurityContextHolderFilter;
-import org.springframework.security.web.context.SecurityContextRepository;
+import org.springframework.security.web.context.*;
 import org.springframework.security.web.header.writers.StaticHeadersWriter;
 import org.springframework.web.cors.CorsConfigurationSource;
 
@@ -39,12 +43,17 @@ public class SecurityConfig {
     private final RefreshTokenService refreshTokenService;
     private final JwtTokenProvider jwtTokenProvider;
     private final MvRequestFilter mvRequestFilter;
+    private final MvLogoutHandler mvLogoutHandler;
+    private final LambdaRequestFilter lambdaFilter;
     private final AuthenticationConfiguration authenticationConfiguration;
+    private final WebhookFilter webhookFilter;
 
 
     @Bean
     public SecurityContextRepository securityContextRepository() {
-        return new HttpSessionSecurityContextRepository();
+        return new DelegatingSecurityContextRepository(
+                new RequestAttributeSecurityContextRepository(),
+                new HttpSessionSecurityContextRepository());
     }
 
 
@@ -81,17 +90,32 @@ public class SecurityConfig {
     @Bean
     public WebSecurityCustomizer webSecurityCustomizer() {
 
-        return web -> web.ignoring().requestMatchers("/img/**")
+        return web -> web.ignoring()
+                .requestMatchers("/api/management/**","/api/targets","/api/config","/api/actuator","/api/actuator/**")
+                .requestMatchers("/img/**")
+                .requestMatchers("/api/management/**")
                 .requestMatchers("/api/test")
-                .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-resources/**") //swagger
+                .requestMatchers("/api/swagger-ui/**", "/api/v3/api-docs/**", "/api/swagger-resources/**") //swagger
                 .requestMatchers("/", "/favicon.ico", "/static", "/about", "/contactus")
                 .requestMatchers("/error", "/error/**");
+    }
 
+    @Bean
+    public SecurityFilterChain monitoringSecurityFilterChain(HttpSecurity security) throws Exception {
+        configureCommon(security);
+        security.securityMatcher("/api/admin/**")
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/api/admin/login").permitAll() // 관리자가 로그인할 수 있도록 허용
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN") // ✅ 관리자만 접근 가능
+                        .anyRequest().authenticated()
+                );
+        return security.build();
     }
 
     @Bean
     public SecurityFilterChain oauth2SecurityFilterChain(HttpSecurity security,
-                                                         AuthenticationManager authenticationManager) throws Exception {
+                                                         AuthenticationManager authenticationManager,
+                                                         DeletedUserFilter deletedUserFilter) throws Exception {
         configureCommon(security);
         security.securityMatcher("/api/oauth2/authorization/google","/login/oauth2/code/google","/api/authorization/google/**","/api/login/oauth2/code/**");// 이 URL만 처리함
         security .authorizeHttpRequests(auth -> auth
@@ -113,33 +137,47 @@ public class SecurityConfig {
                         .successHandler(mvOAuth2FormSuccessHandler())
                         .failureHandler(mvOAuth2FormFailureHandler())
                 );
+        security.addFilterBefore(deletedUserFilter, UsernamePasswordAuthenticationFilter.class);
         return security.build();
     }
 
     @Bean
     public SecurityFilterChain formLoginSecurityFilterChain(HttpSecurity security,
                                                             AuthenticationManager authenticationManager,
-                                                            MvLoginFormFilter mvLoginFormFilter, AuthenticationConfiguration authenticationConfiguration) throws Exception {
+                                                            MvLoginFormFilter mvLoginFormFilter,
+                                                            AuthenticationConfiguration authenticationConfiguration,
+                                                            DeletedUserFilter deletedUserFilter) throws Exception {
         configureCommon(security);
         security.securityMatcher("/api/login") // 폼 로그인 요청만 매칭
                 .authorizeHttpRequests(auth -> auth.anyRequest().permitAll())
                 .addFilterBefore(mvLoginFormFilter, UsernamePasswordAuthenticationFilter.class);
-        security.addFilterAfter(mvRequestFilter, SecurityContextHolderFilter.class);
+        security.addFilterBefore(deletedUserFilter, UsernamePasswordAuthenticationFilter.class);
 
         return security.build();
-
     }
-
     @Bean
-    public SecurityFilterChain commonSecurityFilterChain(HttpSecurity security) throws Exception {
+    public SecurityFilterChain commonSecurityFilterChain(HttpSecurity security,
+                                                         DeletedUserFilter deletedUserFilter) throws Exception {
         configureCommon(security);
         security.authorizeHttpRequests(authorizeRequests ->
                 authorizeRequests
-                        .requestMatchers("/api/signup/**").permitAll()
-                        .requestMatchers("/api/auth/me").hasRole("USER")
-                        .requestMatchers("/admin/**").hasRole("ADMIN"));
+                        .requestMatchers("/api/interview/response/transcription").permitAll()
+                        .requestMatchers("/api/signup/form").permitAll()
+                        .requestMatchers("/api/webhook/**").permitAll()
+                        .requestMatchers("/error").permitAll()
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/api/auth/me").hasAnyRole("USER", "ADMIN")
+                        .requestMatchers("/api/token/access").authenticated()
+                        .requestMatchers("/api/**").authenticated());
 
+        security.addFilterBefore(lambdaFilter, UsernamePasswordAuthenticationFilter.class);
+        security.addFilterBefore(webhookFilter, UsernamePasswordAuthenticationFilter.class);
         security.addFilterBefore(mvRequestFilter, UsernamePasswordAuthenticationFilter.class);
+
+        security.addFilterBefore(deletedUserFilter, UsernamePasswordAuthenticationFilter.class);
+        security.logout(logout -> logout
+                .addLogoutHandler(mvLogoutHandler)
+                .logoutUrl("/api/logout"));
         return security.build();
     }
 

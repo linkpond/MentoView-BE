@@ -25,9 +25,11 @@ public class Interview extends AuditingFields {
     private Long interviewId;
 
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private InterviewStatus interviewStatus;
 
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private InterviewType interviewType;
 
     @ManyToOne(fetch = FetchType.LAZY)

@@ -5,12 +5,12 @@ import ce2team1.mentoview.entity.User;
 import ce2team1.mentoview.entity.atrribute.Role;
 import ce2team1.mentoview.entity.atrribute.SocialProvider;
 import ce2team1.mentoview.entity.atrribute.UserStatus;
+import ce2team1.mentoview.security.dto.MvPrincipalDetails;
 import lombok.*;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 
 import java.util.Map;
-import java.util.Objects;
 
 /**
  * DTO for {@link User}
@@ -19,6 +19,7 @@ import java.util.Objects;
 @Builder(toBuilder = true)
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
+@ToString
 public class UserDto {
     private Long userId;
     private String email;
@@ -31,39 +32,26 @@ public class UserDto {
     private String billingKey;
 
     public static UserDto of(String email, String password, String name, Role role, SocialProvider socialProvider, String providerId, UserStatus status, String billingKey) {
-        return new UserDto(null, email, password, name, role, socialProvider, providerId,  status, null);
+        return new UserDto(null, email, password, name, role, socialProvider, providerId,  status != null ? status : UserStatus.ACTIVE, null);
     }
     public static UserDto of(Long userId,String email, String password, String name, Role role, SocialProvider socialProvider, String providerId, UserStatus status, String billingKey) {
-        return new UserDto(userId, email, password, name, role, socialProvider, providerId, status, null);
+        return new UserDto(userId, email, password, name, role, socialProvider, providerId, status != null ? status : UserStatus.ACTIVE, null);
     }
-    public static UserDto of(String email, Role role) {
+    public static UserDto of(String email, Role role,  Long userId, UserStatus status) {
         return UserDto.builder()
+                .userId(userId)
                 .email(email)
-                .password(null)
+                .password("")
                 .role(role)
+                .status(status != null ? status : UserStatus.ACTIVE)
                 .build();
     }
-    public static UserDto ofForm(String email, String password, Role role) {
-        Objects.requireNonNull(password, "폼 로그인 시 비밀번호는 필수입니다.");
-        return UserDto.builder()
-                .email(email)
-                .password(password)
-                .role(role)
-                .build();
-    }
-
-    public UserDto updatePassword(String newPassword) {
-        Objects.requireNonNull(newPassword, "새로운 비밀번호는 null이 될 수 없습니다.");
-        return this.toBuilder()
-                .password(newPassword)
-                .build();
-    }
-
 
     public static UserDto toDto(User user) {
         return UserDto.builder()
                 .userId(user.getUserId())
                 .email(user.getEmail())
+                .password(user.getPassword() != null ? user.getPassword() : "")
                 .name(user.getName())
                 .role(user.getRole())
                 .socialProvider(user.getSocialProvider())
@@ -75,7 +63,7 @@ public class UserDto {
         return UserDto.builder()
                 .userId(user.getUserId())
                 .email(user.getEmail())
-                .password(user.getPassword())
+                .password(user.getPassword() != null ? user.getPassword() : "")
                 .name(user.getName())
                 .role(user.getRole())
                 .socialProvider(user.getSocialProvider())
@@ -83,10 +71,10 @@ public class UserDto {
                 .status(user.getStatus())
                 .build();
     }
+
     public static UserDto byOAuth2User(OAuth2User  oAuth2User) {
         String email = null;
         String name = null;
-
 
         if(oAuth2User instanceof OidcUser oidcUser) {
             Map<String, Object> claims = oidcUser.getClaims();
@@ -112,8 +100,12 @@ public class UserDto {
                 .email(email)
                 .name(name)
                 .role(Role.USER)
-                .status(UserStatus.ACTIVE)
+               // .status(null)
                 .build();
+    }
+
+    public static UserDto byOAuth2User(MvPrincipalDetails principalDetails) {
+        return principalDetails.getUserDto();
     }
 
 }
